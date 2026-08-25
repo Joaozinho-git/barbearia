@@ -1,26 +1,491 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Superfícies */
+  --color-base:       #050505;
+  --color-raise:      #0F0F0F;
+
+  /* Texto */
+  --color-ink:        #EEEAE2;
+  --color-muted:      #B6B09E;
+  --color-dim:        #B6B09E;
+
+  /* Acento poste de barbearia */
+  --color-pole-red:   #C6302B;
+  --color-pole-blue:  #2B4C8C;
+  --color-pole-white: #EDEAE2;
+
+  /* Acento madeira */
+  --color-wood:       #B07C3E;
+  --color-wood-lt:    #CC9A5C;
+
+  /* Acento cromado */
+  --color-chrome:     #8D949A;
+
+  /* Estrutura */
+  --color-line:       #232019;
+
+  /* Tipografia */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans:    var(--font-space-grotesk), system-ui, sans-serif;
+  --font-mono:    var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Easing e duração — padrão único do projeto */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* ---- Por que NAO ha contencao do vazamento horizontal ----
+     Registrado porque a tentacao de adicionar e grande: o Lighthouse aponta
+     LCP de 3,2s e a causa esta aqui.
+
+     As glows tem 960px de largura e a .glow-white::before, ancorada em
+     left: -140px, chega a x=820. Numa tela de 412px isso deixa o
+     documentElement.scrollWidth em 892px. O visitante nunca rola de lado (o
+     overflow-x do body contem), mas a emulacao movel do Chrome dimensiona a
+     viewport de LAYOUT por essa extensao: reporta innerWidth 892 e
+     innerHeight 1782 numa tela declarada de 412x823. Dentro dessa viewport
+     falsa a MARCA D'AGUA — que vive em y 929..1160, FORA da dobra real de
+     823px — entra no conjunto de candidatos e vira o LCP. Medido:
+
+       mobile:true   innerHeight 1782  ->  LCP: IMG.watermark  2380ms
+       mobile:false  innerHeight  823  ->  LCP: IMG.aviao      1028ms
+
+     Ou seja: em viewport verdadeira o LCP JA e ~1,0s. O 3,2s existe so na
+     emulacao — que e tambem a que o PageSpeed usa.
+
+     Tres correcoes foram testadas e NENHUMA passa na Regra 2:
+
+     1. overflow-x hidden ou clip no <html> levam o LCP a ~1000ms, mas os dois
+        forcam overflow-y a auto e passam a cortar o excedente vertical do
+        .glow-blue::before da secao 04, que desce 243px abaixo do fim do body.
+        Essa faixa NAO e vazia: medido, 56 a 68% dos pixels diferem do fundo,
+        com desvio de ate 15/255 — e o arco inferior do glow azul.
+     2. overflow-x clip no <body> nao surte efeito nenhum: o valor propaga para
+        a viewport e o proprio body volta a visible. scrollWidth segue 892.
+     3. @media (max-width:652px) { main { overflow-x: clip } } preserva o
+        excedente vertical (os 279px ficam intactos) e leva o LCP a 1016ms —
+        mas muda o TOM das glows atras do indice lateral, que e position:fixed
+        e vive FORA do <main>. Medido: 934px de diferenca em x 29..53 nas
+        capturas de 390 e 430px.
+
+     Enquanto nao houver uma variante que nao mexa em pixel, fica como esta: a
+     nota 93 e o preco do sangramento das glows, que e design aprovado. */
+
+  body {
+    background-color: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  section[id] {
+    scroll-margin-top: 24px;
+  }
+
+  /* Foco visível — nunca remover */
+  :focus-visible {
+    outline: 2px solid var(--color-wood-lt);
+    outline-offset: 3px;
+  }
+
+  /* Os DELAYS entram junto das duracoes, e nao e detalhe. Zerar so a duracao
+     deixava o animation-delay do .hero-item intacto — ate 0,72s — e como ele
+     usa `animation-fill-mode: both`, durante o delay o elemento fica travado
+     no keyframe `from`, que e opacity 0.
+
+     Medido antes desta correcao, com prefers-reduced-motion ativo: o hero
+     inteiro nascia invisivel e aparecia em cinco degraus. Opacidades dos cinco
+     .hero-item: [0 0 0 0 0] no quadro inicial, [1 0 0 0 0] aos 150ms,
+     [1 1 1 0 0] aos 450ms, so [1 1 1 1 1] aos 750ms. Quem pediu MENOS
+     movimento recebia o <h1> e o botao "Agende aqui" piscando, e sem a
+     transicao suave para amortecer — pior que a animacao original.
+
+     .hero-item e o unico afetado hoje: .motion-ok .reveal tambem carrega
+     transition-delay, mas sob reduced-motion o GATE remove motion-ok e aquelas
+     regras nem existem; .acc-seta, .idx-dot, .idx-num e .contando tem duracao
+     e nenhum delay. Ainda assim as duas linhas sao curinga de proposito, para
+     que qualquer delay novo ja nasca coberto.
+
+     NAO mexe em pixel no estado de repouso: verificado em 320, 390 e 430px,
+     0 pixels de diferenca. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* ---- Bordas listradas de poste de barbearia ---- */
+  .border-pole {
+    border: 1.5px solid transparent;
+    border-image: repeating-linear-gradient(
+      45deg,
+      var(--color-pole-red)   0 5px,
+      var(--color-pole-white) 5px 10px,
+      var(--color-pole-blue)  10px 15px,
+      var(--color-pole-white) 15px 20px
+    ) 1.5;
+  }
+
+  .border-pole-thin {
+    border: 1px solid transparent;
+    border-image: repeating-linear-gradient(
+      45deg,
+      var(--color-pole-red)   0 4px,
+      var(--color-pole-white) 4px 8px,
+      var(--color-pole-blue)  8px 12px,
+      var(--color-pole-white) 12px 16px
+    ) 1;
+  }
+
+  /* ---- Manchas de cor atmosférica ----
+     position relative + z-index 0 são OBRIGATÓRIOS na .glow.
+     Eles criam o contexto de empilhamento que faz o ::before de z-index -1
+     pintar atrás do texto da seção mas na frente do fundo da página.
+     Sem o z-index: 0 aqui, a mancha desaparece. NÃO remover.
+     As manchas ultrapassam a largura da seção DE PROPÓSITO — o vazamento
+     entre seções é decisão de design aprovada. O overflow-x: hidden do body
+     cuida do corte. NÃO adicionar overflow hidden nas seções. */
+  .glow {
+    position: relative;
+    z-index: 0;
+  }
+  .glow::before {
+    content: "";
+    position: absolute;
+    width: 960px;
+    height: 960px;
+    border-radius: 9999px;
+    z-index: -1;
+    pointer-events: none;
+  }
+  /* A parada de 68% com a opacidade reduzida substitui o filter: blur() que
+     existia aqui. O blur custava 921.600px de gaussiana por glow, tres vezes,
+     a cada repaint — o maior custo de renderizacao da pagina.
+
+     Os dois numeros andam JUNTOS. O blur nao so espalhava a borda: ele
+     derrubava o pico do centro de 1,00 para 0,79. Subir a parada sem baixar a
+     opacidade deixaria os nucleos 27% mais claros. Ajustado por minimos
+     quadrados contra o perfil gaussiano real: 68% com fator 0,845.
+
+     O PRODUTO parada x opacidade entra no contraste da marca d'agua da secao
+     02 — verificado em 5,17:1, contra o minimo AA de 4,5:1. Mexer em um sem o
+     outro derruba o texto. NAO reintroduzir filter: blur() aqui. */
+  .glow-red::before {
+    background: radial-gradient(circle, var(--color-pole-red) 0%, transparent 68%);
+    opacity: 0.169;
+    bottom: -140px;
+    right: -100px;
+  }
+  .glow-white::before {
+    background: radial-gradient(circle, var(--color-pole-white) 0%, transparent 68%);
+    opacity: 0.084;
+    top: 50%;
+    left: -140px;
+    transform: translateY(-50%);
+  }
+  .glow-blue::before {
+    background: radial-gradient(circle, var(--color-pole-blue) 0%, transparent 68%);
+    opacity: 0.186;
+    top: -140px;
+    right: -110px;
+  }
+
+  /* ---- Accordion nativo <details> ----
+     Três seletores para matar o marcador. display:flex mata o list-item,
+     list-style cobre Firefox, ::-webkit-details-marker cobre Safari.
+     NÃO remover nenhum dos três. */
+  .acc-summary {
+    display: flex;
+    cursor: pointer;
+    list-style: none;
+  }
+  .acc-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Seta do accordion.
+     A classe .acc-seta é OBRIGATÓRIA: o seletor precisa mirar só a seta.
+     Usar `details[open] summary span` giraria TODOS os spans do cabeçalho.
+     O display inline-block garante que o transform funcione mesmo que o
+     summary deixe de ser flex no futuro. */
+  .acc-seta {
+    display: inline-block;
+    transition: transform 280ms var(--ease-out-soft);
+  }
+  details[open] > .acc-summary .acc-seta {
+    transform: rotate(180deg);
+  }
+
+  /* ---- Entrada do hero — roda sempre, independente do gate ---- */
+  @keyframes hero-entra {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .hero-item {
+    animation: hero-entra 1.2s var(--ease-out-soft) both;
+    animation-delay: calc(var(--i) * 0.18s);
+  }
+
+  /* ---- Reveal no scroll — só com motion-ok ----
+     Sem a classe motion-ok no html, nenhuma destas regras existe e o
+     conteúdo aparece normalmente. NÃO inverter essa lógica. */
+  .motion-ok .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.6s var(--ease-out-soft),
+                transform 0.6s var(--ease-out-soft);
+    transition-delay: calc(var(--i, 0) * 0.15s);
+  }
+  .motion-ok .reveal.in-view {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ---- Corte de navalha entre seções ----
+     Rápido e linear de propósito: suave pareceria barra de carregamento,
+     seco parece um corte. NÃO trocar por ease. */
+  .cut {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-line);
+    transform-origin: left center;
+  }
+  .motion-ok .cut {
+    transform: scaleX(0);
+    transition: transform 0.55s linear;
+  }
+  .motion-ok .cut.in-view {
+    transform: scaleX(1);
+  }
+
+  /* ---- Marca d'agua ----
+     Fundo da secao 02 (Formacao), ATRAS de todo o conteudo.
+
+     z-index -1 dentro do contexto de empilhamento criado pela .glow da
+     secao: e o que garante que ela fique atras do texto sem depender da
+     estrutura interna do Formacao.tsx. NAO remover.
+
+     Ancorada por BOTTOM, nunca centralizada. A secao 02 muda de altura
+     quando o acordeao abre; centralizar faria a marca saltar ate 160px a
+     cada clique. A .glow-red::before tambem e ancorada por bottom, entao as
+     duas se movem juntas e o contraste fica constante nos tres estados.
+
+     bottom NEGATIVO de proposito: -24px deixa a base do "BARBEARIA" cair no
+     padding vazio do topo da secao 03, que e o enquadramento aprovado.
+     Medido: vaza 4,2% da tinta no desktop, sem texto por baixo. Mais
+     negativo desce, menos negativo sobe. NAO trocar por positivo.
+
+     Opacidade 0.18 com max-width 520px: medido com a glow vermelha, o texto
+     #B6B09E fica em 4,96:1 (minimo AA 4,5:1). NAO subir a opacidade e NAO
+     passar de 560px de largura nesta secao.
+
+     Centralizacao horizontal por flex, sem transform: o arquivo foi
+     recortado e o centro da tinta e exatamente 50%. Um translateX aqui
+     tiraria a marca do centro. */
+     .marca-dagua {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -24px;
+      z-index: -1;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      line-height: 0;
+    }
+    .watermark {
+      width: 100%;
+      max-width: 520px;
+      height: auto;
+      opacity: 0.18;
+    }
+
+  /* ---- Avião do hero ----
+     O sangramento de -48px à direita é intencional: dá a leitura de voo
+     atravessando a borda, e o overflow-x hidden do body corta sem scroll.
+     Ele também afasta a asa inferior do h1 em telas estreitas, o que resolve
+     o encosto em 375px sem precisar encolher o avião.
+     A rotação é estática: 5 graus alargam a caixa em cerca de 22px, absorvidos
+     pelo overflow-x hidden do body. NÃO aumentar o ângulo, NÃO animar. */
+  .aviao {
+    position: absolute;
+    top: 12px;
+    right: -48px;
+    width: clamp(200px, 52vw, 400px);
+    height: auto;
+    opacity: 0.45;
+    pointer-events: none;
+    z-index: 0;
+    transform: rotate(-5deg);
+  }
+
+  /* ---- Minimapa ----
+     O hue-rotate acompanha o invert obrigatoriamente: sozinho, o invert
+     deixaria o marcador vermelho em ciano e a vegetação em rosa. Ele devolve
+     os matizes e preserva só a inversão de luminosidade. NÃO adicionar
+     grayscale — antes do hue-rotate ele anularia o efeito.
+
+     SEM touch-action de proposito, e a razao fica registrada para ninguem
+     adicionar um no automatico. A hipotese era que o iframe de 180px por toda
+     a largura fosse armadilha de rolagem: o polegar que cai ali arrastaria o
+     MAPA em vez da pagina, e `touch-action: pan-y` devolveria o arrasto
+     vertical. Foi medido e NAO se confirmou — com sequencia manual de toque
+     (touchStart/touchMove/touchEnd) a pagina rolou 60px tanto com pan-y quanto
+     com auto.
+
+     A medicao tem uma ressalva honesta: no ambiente de teste o embed.html
+     respondeu 200 mas nenhuma tile carregou (o openstreetmap.org devolveu 429),
+     entao a camada interativa do mapa pode nao ter inicializado e o teste e
+     inconclusivo, nao negativo. Quem for reabrir isto precisa de um mapa
+     REALMENTE carregado e de um instrumento validado com controle positivo —
+     `Input.synthesizeScrollGesture` com gestureSourceType "touch" nao rola esta
+     pagina nem sobre texto comum, e daria "presa" para qualquer coisa.
+
+     Enquanto nao houver medida do problema, nao entra a correcao: pan-y tem
+     custo certo (mata o arrasto vertical dentro do mapa) e beneficio nao
+     demonstrado. O mapa so aparece apos toque explicito, e existe o link
+     "Ver no Google Maps" logo abaixo como saida. */
+  .mapa-frame {
+    filter: invert(0.92) hue-rotate(180deg) contrast(0.86) brightness(0.95);
+  }
+
+  /* ---- Rolagem suave sob demanda ----
+     O smooth NÃO pode viver no html de forma permanente: ele transforma a
+     restauração de scroll do navegador em rolagem animada e, durante essa
+     animação, o navegador grava na URL o hash da âncora mais próxima.
+     O SectionIndex adiciona esta classe no clique e a remove em seguida. */
+  .scroll-suave {
+    scroll-behavior: smooth;
+  }
+
+  /* ---- Posicao do indice lateral ----
+     O 310px nao e arbitrario: o main tem max-width 652px, entao a borda
+     esquerda dele fica em 50% - 326px e o conteudo comeca em 50% - 254px.
+     O nav fica 56px a esquerda do inicio do conteudo, igual a antes da
+     centralizacao. 254 + 56 = 310.
+
+     O max() devolve os 16px fixos assim que a viewport cai abaixo de 652px,
+     que e exatamente onde o mx-auto do main deixa de agir. Por isso a
+     transicao e continua, sem salto, e o mobile nao muda nada.
+
+     Vive em @layer components de proposito: nenhuma utility do Tailwind
+     define left neste nav, entao nao ha disputa de camada. Se algum dia
+     voltar um left-[...] na className, esta regra perde. */
+  .idx-nav {
+    left: max(16px, calc(50% - 310px));
+  }
+
+  /* ---- Area de toque do indice lateral (WCAG 2.2, SC 2.5.8) ----
+     Os cinco links medem 48x14px de caixa — reprovam o minimo de 24x24px. A
+     correcao obvia seria dar padding vertical ao <a>, mas isso esticaria cada
+     link para 44px e espalharia os cinco pontos por mais 150px: o espacamento
+     atual e o aprovado e nao pode mudar.
+
+     Este ::after cresce so a area sensivel ao toque, sem deslocar um pixel e
+     sem pintar nada. Depende do position:relative que o <a> ja carrega inline.
+
+     A aritmetica usa a altura MEDIDA, nao a nominal. O <a> nao mede 14px e sim
+     13,938px: a fracao vem do line-box do <span> mono de 9px com line-height
+     normal. Com inset -5px o alvo ficava em 23,938px e reprovava a SC 2.5.8
+     por 0,062px — passava no calculo de cabeca e falhava na regua.
+
+     Com -6px o alvo vai a 13,938 + 6 + 6 = 25,94px. Centro a centro sao
+     13,938 + 14 = 27,94px, entao sobram 2px de folga entre alvos vizinhos.
+     O limite de sobreposicao e -7px (alvos encostando) e -8px (sobrepostos),
+     nao -5px. Se o gap-[14px] do nav ou o tamanho do .idx-num mudarem, a
+     altura do <a> muda junto e este numero precisa ser remedido. */
+  .idx-nav a::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+  }
+
+  /* ---- Area de toque dos links do rodape (WCAG 2.2, SC 2.5.8) ----
+     Mesma tecnica do .idx-nav acima, pelo mesmo motivo: os links de telefone e
+     Instagram herdam font-mono 8.5px do <p> e mediam 87,98x11px e 164,23x11px
+     — medido nos quatro aparelhos emulados, identico em todos. Dar padding
+     aqui esticaria a linha do rodape e moveria o bloco inteiro.
+
+     O <a> precisa de position:relative explicito (o do indice ja tinha o dele
+     inline no JSX). Em elemento inline isso nao muda layout nenhum: o ::after
+     absoluto nao participa do fluxo de linha e nao pinta nada.
+
+     -6.5px de cada lado leva 11 + 6.5 + 6.5 = 24,0px exatos. As linhas vizinhas
+     do rodape nao tem nenhum outro alvo, entao a expansao vertical nao
+     sobrepoe alvo algum; horizontalmente o inset e 0, entao os dois links nao
+     se invadem apesar de estarem lado a lado.
+
+     RESSALVA: a SC 2.5.8 tem excecao para alvo "inline", cujo tamanho e
+     restringido pela entrelinha do texto ao redor — que provavelmente se
+     aplica aqui. A correcao entrou mesmo assim porque custa zero pixel e
+     dois alvos de 11px lado a lado num site so de celular erram na pratica.
+
+     Verificado: 0 pixels de diferenca em 320, 390 e 430px. */
+  #s4 p a {
+    position: relative;
+  }
+  #s4 p a::after {
+    content: "";
+    position: absolute;
+    inset: -6.5px 0;
+  }
+
+  /* ---- Ponto ativo do índice lateral ----
+     Sem prefixo .motion-ok de propósito: sinalizar onde o leitor está é
+     orientação de navegação, não animação, e vale em qualquer aparelho. */
+  .idx-dot {
+    transition: background-color 300ms var(--ease-out-soft),
+                border-color 300ms var(--ease-out-soft),
+                box-shadow 300ms var(--ease-out-soft);
+  }
+  .idx-num {
+    transition: color 300ms var(--ease-out-soft);
+  }
+
+  /* ---- Contagem em andamento ----
+     0.4px é o teto: acima disso o número fica ilegível. NÃO aumentar. */
+  .contando {
+    filter: blur(0.4px);
+    opacity: 0.85;
+    transition: filter 200ms linear, opacity 200ms linear;
+  }
+}
+
+/* O estado ativo do índice precisa morar em @layer utilities, e não junto do
+   resto em components: a camada utilities é a última, e no Tailwind v4 a
+   ordem das camadas vence a especificidade. Em components estas regras
+   perderiam para os utilitários bg-raise, border-dim e text-dim que os spans
+   já carregam, e o destaque nunca apareceria. */
+@layer utilities {
+  .ativo .idx-dot {
+    background-color: var(--color-wood-lt);
+    border-color: var(--color-wood-lt);
+    box-shadow: 0 0 0 3px rgb(204 154 92 / 0.18);
+  }
+  .ativo .idx-num {
+    color: var(--color-wood-lt);
+  }
 }

@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Santos Dumont Barbearia — site
 
-## Getting Started
+Site institucional de página única da Santos Dumont Barbearia, em Vacaria/RS.
+Cinco seções, sem backend, sem formulário, sem autenticação.
 
-First, run the development server:
+**Next.js 16.3.1** (App Router, Turbopack, rota estática) · **React 19.2.8** ·
+**Tailwind CSS v4** · **TypeScript 5.9**
+
+---
+
+## As duas regras do projeto
+
+### 1. O site é para CELULAR
+
+O alvo real é **320–430px** de largura. Desktop é irrelevante. Um problema que
+só aparece acima de 480px não é bug aqui.
+
+### 2. O visual está aprovado e é final
+
+**Nenhuma alteração pode mover um pixel do estado de repouso.** A prova não é
+inspeção visual, é pixel-diff:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx next build && npx next start -p 3222
+node _comparar-visual.mjs capturar antes     # ANTES de editar
+# ...edita, npx next build, reinicia o servidor...
+node _comparar-visual.mjs capturar depois
+node _comparar-visual.mjs comparar antes depois   # tem que dar "TUDO IDENTICO"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sempre contra `next start`, **nunca** contra `next dev`: o dev serve 792 KB de
+script contra 140 KB da produção, e qualquer número medido ali é ficção.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Rodar localmente
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Produção, que é onde se mede:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start -- -p 3222
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Verificações:
 
-## Deploy on Vercel
+```bash
+npx tsc --noEmit && npx eslint . && npx next build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy na Vercel
+
+### Variável de ambiente obrigatória
+
+Antes do primeiro deploy, definir em **Settings → Environment Variables**:
+
+| Variável | Valor | Ambiente |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | `https://seudominio.com.br` | Production |
+
+**Com `https://` na frente.** Sem o esquema, o `new URL()` do `metadataBase`
+lança exceção e o build falha.
+
+Essa variável alimenta o `canonical`, o `og:url`, o `og:image`, o `@id` e a
+`url` do JSON-LD, o `Host` do `robots.txt` e o `<loc>` do `sitemap.xml`. Sem
+ela o fallback é `VERCEL_PROJECT_PRODUCTION_URL` e, na ausência dos dois,
+`http://localhost:3000` — que é exatamente o que o Google indexaria.
+
+### O valor é resolvido em BUILD TIME
+
+A rota `/` é estática. Trocar a variável na Vercel **não muda o HTML já
+publicado**: é preciso republicar (Deployments → Redeploy).
+
+### O que já está configurado
+
+- **Cabeçalhos de segurança** em `next.config.ts`: `X-Content-Type-Options`,
+  `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, e
+  `poweredByHeader: false`. A Vercel aplica os `headers()` normalmente.
+- **Sem Content-Security-Policy**, de propósito. A razão está comentada no
+  `next.config.ts` — não adicionar uma no automático sem ler.
+- **Otimização de imagem** pelo `next/image`, servida pelo otimizador da
+  Vercel (entra na cota do plano).
+- `robots.txt` e `sitemap.xml` gerados pelas convenções de arquivo do Next.
+
+---
+
+## Arquitetura: o que quebra se mexerem
+
+### `motion-ok` controla CONTEÚDO, não só animação
+
+Enquanto a classe `motion-ok` existe no `<html>`, a regra
+`.motion-ok .reveal { opacity: 0 }` esconde **17 blocos de conteúdo**. Quem
+devolve `opacity: 1` é o componente cliente `Reveal`.
+
+Três coisas removem a classe:
+
+1. o script inline `GATE` do `app/layout.tsx` (reduced-motion, `deviceMemory < 2`,
+   `hardwareConcurrency < 4`, rede 2g);
+2. o `MotionProbe`, quando mede FPS baixo;
+3. um **failsafe de 2500ms** dentro do próprio GATE, que checa
+   `document.documentElement.dataset.hidratado`.
+
+O failsafe existe porque, sem ele, qualquer coisa que impeça o chunk de JS de
+chegar — rede instável, chunk 404 pós-deploy, extensão de navegador — deixa o
+hero intacto e as seções 01 a 04 **em branco**. O `<noscript>` não cobre esse
+caso: o JavaScript está habilitado, só não chegou.
+
+Ao mexer em `Reveal`, `MotionProbe`, no `GATE` ou no CSS de `.reveal`, trate os
+quatro como um bloco atômico. E teste bloqueando `*/_next/static/chunks/*.js` —
+**nunca** `chunks/*`, porque o CSS compilado mora lá e bloqueá-lo mascara o bug.
+
+---
+
+## Ferramentas de medição
+
+| Arquivo | O que faz |
+|---|---|
+| `_comparar-visual.mjs` | Prova da Regra 2. Captura 320/390/430px com acordeões fechados e abertos e compara pixel a pixel. Determinístico: duas execuções seguidas dão arquivos idênticos. |
+| `_medir-secao02.mjs` | Geometria e contraste da seção 02. Precisa de `URL_MEDICAO` apontando para a porta de produção. |
+| `_gerar-imagens.mjs` | Gera `og-santos-dumont.png` (1200×630), `app/icon.png` (256×256) e `app/apple-icon.png` (180×180) a partir de `public/logo-santos-dumont.png`. **Sobrescreve os três de uma vez** — rodar só quando for regerar todos. |
+
+As capturas vão para `_visual/`, que está no `.gitignore`.
