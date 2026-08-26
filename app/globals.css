@@ -39,42 +39,109 @@
     box-sizing: border-box;
   }
 
-  /* ---- Por que NAO ha contencao do vazamento horizontal ----
-     Registrado porque a tentacao de adicionar e grande: o Lighthouse aponta
-     LCP de 3,2s e a causa esta aqui.
+  /* ---- Contencao do vazamento horizontal ----
+     Esta regra existe por causa de DOIS bugs visíveis no aparelho real, que
+     tinham a MESMA raiz. Antes de mexer aqui, leia tudo.
 
-     As glows tem 960px de largura e a .glow-white::before, ancorada em
-     left: -140px, chega a x=820. Numa tela de 412px isso deixa o
-     documentElement.scrollWidth em 892px. O visitante nunca rola de lado (o
-     overflow-x do body contem), mas a emulacao movel do Chrome dimensiona a
-     viewport de LAYOUT por essa extensao: reporta innerWidth 892 e
-     innerHeight 1782 numa tela declarada de 412x823. Dentro dessa viewport
-     falsa a MARCA D'AGUA — que vive em y 929..1160, FORA da dobra real de
-     823px — entra no conjunto de candidatos e vira o LCP. Medido:
+     A RAIZ. As glows tem 960px de largura. A .glow-white::before da secao 03
+     e ancorada em left: -140px a partir do conteudo do main (que comeca em
+     x=72 por causa do pl-[72px]), entao a CAIXA dela vai de x=-68 ate x=892.
+     Numa tela de 412px isso deixa 480px de area rolavel fantasma. A tinta que
+     mora la fora nunca apareceu — quem esconde e o overflow-x: hidden do body.
+     O problema nunca foi a tinta: foi a AREA.
 
-       mobile:true   innerHeight 1782  ->  LCP: IMG.watermark  2380ms
-       mobile:false  innerHeight  823  ->  LCP: IMG.aviao      1028ms
+     Porque o body nao resolvia: com o <html> em visible, o overflow do body
+     PROPAGA para a viewport. Isso impede o usuario de rolar de lado, mas a
+     regiao de scrollable overflow continua existindo — e e ela que o navegador
+     movel usa para dimensionar a viewport de LAYOUT. Medido em Chrome
+     mobile:true, tela 412x823:
 
-     Ou seja: em viewport verdadeira o LCP JA e ~1,0s. O 3,2s existe so na
-     emulacao — que e tambem a que o PageSpeed usa.
+       innerWidth x innerHeight ..... 892 x 1782   (deveria ser 412 x 823)
+       documentElement.clientWidth .. 412
+       documentElement.scrollWidth .. 892
 
-     Tres correcoes foram testadas e NENHUMA passa na Regra 2:
+     OS DOIS SINTOMAS, ambos consequencia desses 892x1782:
 
-     1. overflow-x hidden ou clip no <html> levam o LCP a ~1000ms, mas os dois
-        forcam overflow-y a auto e passam a cortar o excedente vertical do
-        .glow-blue::before da secao 04, que desce 243px abaixo do fim do body.
-        Essa faixa NAO e vazia: medido, 56 a 68% dos pixels diferem do fundo,
-        com desvio de ate 15/255 — e o arco inferior do glow azul.
-     2. overflow-x clip no <body> nao surte efeito nenhum: o valor propaga para
-        a viewport e o proprio body volta a visible. scrollWidth segue 892.
-     3. @media (max-width:652px) { main { overflow-x: clip } } preserva o
-        excedente vertical (os 279px ficam intactos) e leva o LCP a 1016ms —
-        mas muda o TOM das glows atras do indice lateral, que e position:fixed
-        e vive FORA do <main>. Medido: 934px de diferenca em x 29..53 nas
-        capturas de 390 e 430px.
+     1. "Sobra tela." O canvas tem 892px numa tela de 412px, entao o navegador
+        deixa o usuario afastar ate enquadrar os 892 — a pagina aparece a ~46%
+        no canto esquerdo e o resto fica preto. Nao era zoom errado do usuario:
+        era o canvas mesmo.
+     2. "O indice nao fica fixo e vai parar no meio da tela." A .idx-nav e
+        position: fixed com left: max(16px, calc(50% - 310px)) e top: 50%, e
+        fixed resolve porcentagem contra a viewport de LAYOUT. Com 892x1782:
+        left vira max(16, 446-310) = 136px (era 16px) e top vira 891px, fora
+        dos 823px visiveis. Dai o indice pousar em cima do texto da secao 02 e
+        parecer que desliza junto com a rolagem.
 
-     Enquanto nao houver uma variante que nao mexa em pixel, fica como esta: a
-     nota 93 e o preco do sangramento das glows, que e design aprovado. */
+     POR QUE ESCAPOU DA REVISAO VISUAL: o _comparar-visual.mjs captura em
+     mobile:false de proposito, e nesse modo a viewport ja e 412x823 e o indice
+     ja cai em 16px. O bug so existe no modo que a ferramenta evita. Ao mexer
+     nisto, valide com o _testar-correcoes.mjs, que mede nos dois modos.
+
+     POR QUE ESTA REGRA E NAO OUTRA — variantes medidas, mobile:true 412:
+
+       html{overflow-x:clip}    sw 412 OK, mas o excedente vertical do
+                                .glow-blue::before cai de 279,2px para 0,2px
+       html{overflow-x:hidden}  idem, 279,2 -> 0,2
+       body{overflow-x:clip}    sem efeito nenhum: propaga, sw segue 892
+       main{overflow-x:hidden}  sw 412 OK, mas hidden faz o main virar caixa de
+                                rolagem e forca overflow-y a auto: 279,2 -> 0,2
+       main{overflow-x:clip}    sw 412 e 279,2 preservado, mas corta na caixa
+                                do MAIN: acima de 652px o main deixa de ocupar
+                                a viewport e o corte come o sangramento visivel
+                                das glows (medido em 1280: a tinta em x=175 cai
+                                de rgb(10,6,6) para o fundo rgb(5,5,5))
+       .pagina{overflow-x:clip} sw 412, 279,2 preservado, e o corte cai na
+                                borda da VIEWPORT em qualquer largura  <-- esta
+
+     O `clip` e obrigatorio e NAO e intercambiavel com `hidden`: so ele deixa o
+     overflow-y em `visible`, e e isso que preserva os 279,2px de arco inferior
+     do glow azul que descem abaixo do fim do body. Essa faixa nao e vazia — 56
+     a 68% dos pixels diferem do fundo.
+
+     Por que uma div e nao o main: o corte precisa cair onde o
+     overflow-x: hidden do body ja corta hoje, que e a borda da viewport. O
+     main nao serve porque tem max-width 652px e mx-auto — abaixo de 652 ele
+     coincide com a viewport, acima nao. A .pagina ocupa a largura da viewport
+     em toda largura, entao cortar nela nao remove nenhuma tinta que ja
+     aparecia. Verificado com captura em 320, 390, 430, 700 e 1280.
+
+     NAO tentar resolver isso com overflow-clip-margin no main: foi testado e o
+     Chrome IGNORA a propriedade quando o overflow-y fica em `visible`. Com
+     `main{overflow-x:clip;overflow-clip-margin:480px}` o corte aconteceu na
+     mesma na caixa do main, com 1,43 milhao de pixels de diferenca em 1280.
+
+     Efeito colateral bom: com a viewport de layout de volta em 412x823, a
+     marca d'agua (y 929..1160) sai do conjunto de candidatos a LCP na emulacao
+     movel, que era o que inflava o LCP do PageSpeed para 3,2s contra ~1,0s
+     medido em viewport verdadeira.
+
+     OS 483 PIXELS EM x 29..53 — leia antes de "reverter porque mudou pixel".
+     O _comparar-visual.mjs acusa 483px de diferenca em x 29..53 (delta max
+     174), em cima dos numeros 03 e 04 do indice. JA foi investigado e NAO e
+     regressao: e o texto do .idx-num voltando a ter antialiasing de subpixel.
+     Enquanto a pagina tinha area rolavel horizontal, o Chrome promovia a
+     .idx-nav (position: fixed) a camada composta, e texto em camada composta
+     perde o subpixel e cai para grayscale. Sem o vazamento, a promocao nao
+     acontece mais e o texto volta ao normal.
+
+     A prova, e o jeito de refazer se alguem duvidar: com ESTA regra no lugar
+     E um shim reintroduzindo o vazamento —
+
+       body::after { content:""; position:absolute; left:891px; top:0;
+                     width:1px; height:1px }
+
+     — a captura volta a ser IDENTICA a de antes da correcao, nas seis imagens.
+     Ou seja: a regra sozinha nao move um pixel. O que move e o vazamento
+     sumir, e isso qualquer correcao correta faz. Nao existe variante que
+     conserte o bug e mantenha os 483px.
+
+     NAO trocar clip por hidden. NAO mover para html, body ou main. NAO por a
+     SectionIndex dentro da .pagina: caixa com overflow: clip recorta ate
+     descendente position: fixed, e o indice sumiria da tela. */
+  .pagina {
+    overflow-x: clip;
+  }
 
   body {
     background-color: var(--color-base);

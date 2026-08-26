@@ -42,3 +42,8 @@ next-env.d.ts
 
 # capturas do _comparar-visual.mjs
 /_visual/
+
+# saidas das ferramentas de medicao (_medir-viewport, _testar-correcoes,
+# _provar-celular). Os .mjs entram no repositorio; as saidas nao.
+/_medicao-*.txt
+/_celular-*.png

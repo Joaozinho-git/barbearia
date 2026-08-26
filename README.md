@@ -31,6 +31,18 @@ node _comparar-visual.mjs comparar antes depois   # tem que dar "TUDO IDENTICO"
 Sempre contra `next start`, **nunca** contra `next dev`: o dev serve 792 KB de
 script contra 140 KB da produção, e qualquer número medido ali é ficção.
 
+**O ponto cego desta prova:** o `_comparar-visual.mjs` captura em
+`mobile:false`, e existe bug que só aparece em `mobile:true` — foi assim que o
+índice lateral ficou no meio da tela em produção com a suíte dando "TUDO
+IDENTICO". Pixel-diff limpo não é prova de que está certo no celular; é prova
+de que nada mudou. Para o resto, `node _testar-correcoes.mjs`.
+
+E "0 pixels" não é lei da natureza: **corrigir o vazamento horizontal muda 483
+pixels** nos números do índice, porque o texto volta a ter antialiasing de
+subpixel quando a `.idx-nav` deixa de ser promovida a camada composta. Está
+tudo registrado no comentário da `.pagina` em `app/globals.css`, com o shim que
+reproduz. Diferença medida e explicada não é motivo para reverter.
+
 ---
 
 ## Rodar localmente
@@ -122,7 +134,10 @@ quatro como um bloco atômico. E teste bloqueando `*/_next/static/chunks/*.js` �
 
 | Arquivo | O que faz |
 |---|---|
-| `_comparar-visual.mjs` | Prova da Regra 2. Captura 320/390/430px com acordeões fechados e abertos e compara pixel a pixel. Determinístico: duas execuções seguidas dão arquivos idênticos. |
+| `_comparar-visual.mjs` | Prova da Regra 2. Captura 320/390/430px com acordeões fechados e abertos e compara pixel a pixel. Determinístico: duas execuções seguidas dão arquivos idênticos. `LARGURAS_MEDICAO="700,1280"` troca as larguras — use quando a mudança puder afetar acima de 652px, onde o `main` deixa de ocupar a viewport inteira. |
+| `_testar-correcoes.mjs` | **Roda em `mobile:true`, que é o modo que o `_comparar-visual.mjs` evita de propósito.** Mede viewport de layout, `scrollWidth`, posição do índice e o excedente vertical das glows, em 412 e 768. Obrigatório para qualquer mexida em `overflow`, na `.pagina` ou na `.idx-nav`: o bug do índice fora do lugar **só existe neste modo**. |
+| `_medir-viewport.mjs` | Diagnóstico rápido do vazamento horizontal e da posição do índice, nos dois modos de emulação. `COM_MOVIMENTO=1` mede com as animações ativas. |
+| `_provar-celular.mjs` | Captura a tela do celular (412×823, `mobile:true`) com e sem o vazamento, lado a lado. |
 | `_medir-secao02.mjs` | Geometria e contraste da seção 02. Precisa de `URL_MEDICAO` apontando para a porta de produção. |
 | `_gerar-imagens.mjs` | Gera `og-santos-dumont.png` (1200×630), `app/icon.png` (256×256) e `app/apple-icon.png` (180×180) a partir de `public/logo-santos-dumont.png`. **Sobrescreve os três de uma vez** — rodar só quando for regerar todos. |
 

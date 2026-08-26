@@ -33,7 +33,12 @@ const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const PORT = 9344;
 const URL = process.env.URL_MEDICAO ?? "http://localhost:3222/";
 const RAIZ = "_visual";
-const LARGURAS = [320, 390, 430];
+// Larguras padrao = o alvo do site (320-430). LARGURAS_MEDICAO permite provar
+// neutralidade tambem acima de 652px, onde o main deixa de ocupar a viewport
+// inteira e o sangramento das glows passa a ser visivel de verdade.
+const LARGURAS = process.env.LARGURAS_MEDICAO
+  ? process.env.LARGURAS_MEDICAO.split(",").map((n) => Number(n.trim()))
+  : [320, 390, 430];
 
 const [comando, a, b] = process.argv.slice(2);
 if (comando === "comparar") comparar(join(RAIZ, a), join(RAIZ, b));
