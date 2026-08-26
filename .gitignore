@@ -47,3 +47,6 @@ next-env.d.ts
 # _provar-celular). Os .mjs entram no repositorio; as saidas nao.
 /_medicao-*.txt
 /_celular-*.png
+
+# saidas das ferramentas de indice e fim de pagina
+/_fim-*.png

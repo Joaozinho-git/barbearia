@@ -194,7 +194,7 @@ for (const [nome, css] of CANDIDATAS) {
   const d = await medir(412, 823, false);
   const passa =
     m.sw === 412 && m.iw === 412 && m.idxLeft === "16px" && m.idxY < 823 &&
-    Math.abs(m.verticalSobrando - 279.2) < 1;
+    m.verticalSobrando < 2;
   log(`---- ${nome}`);
   log(`   412 mobile:true   ${fmt(m)}`);
   log(`   768 mobile:true   ${fmt(t)}`);

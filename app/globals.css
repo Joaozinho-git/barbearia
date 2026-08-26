@@ -39,9 +39,10 @@
     box-sizing: border-box;
   }
 
-  /* ---- Contencao do vazamento horizontal ----
-     Esta regra existe por causa de DOIS bugs visíveis no aparelho real, que
-     tinham a MESMA raiz. Antes de mexer aqui, leia tudo.
+  /* ---- Contencao do vazamento das glows (os dois eixos) ----
+     Esta regra existe por causa de TRES bugs vistos no aparelho real, e todos
+     tem a MESMA raiz: as glows sao decoracao que sangra de proposito, e a
+     caixa delas entrava na area rolavel do documento. Antes de mexer, leia.
 
      A RAIZ. As glows tem 960px de largura. A .glow-white::before da secao 03
      e ancorada em left: -140px a partir do conteudo do main (que comeca em
@@ -72,44 +73,56 @@
         left vira max(16, 446-310) = 136px (era 16px) e top vira 891px, fora
         dos 823px visiveis. Dai o indice pousar em cima do texto da secao 02 e
         parecer que desliza junto com a rolagem.
+     3. "A pagina vai demais para baixo." Ver o bloco do eixo vertical abaixo.
 
      POR QUE ESCAPOU DA REVISAO VISUAL: o _comparar-visual.mjs captura em
      mobile:false de proposito, e nesse modo a viewport ja e 412x823 e o indice
      ja cai em 16px. O bug so existe no modo que a ferramenta evita. Ao mexer
      nisto, valide com o _testar-correcoes.mjs, que mede nos dois modos.
 
+     O EIXO VERTICAL, pelo mesmo motivo. A .glow-blue::before da secao 04 tem
+     960px de altura e comeca em top: -140px, entao descia 279,2px ABAIXO do
+     fim do body. Isso virava rolagem de verdade: o visitante chegava ao fim do
+     rodape e ainda tinha 279px de tela preta para rolar, porque a tinta que
+     mora ali e quase invisivel (medido no fim da faixa: rgb(7,9,13) contra o
+     fundo rgb(5,5,5) — 8/255 no canal azul). Era o "esta indo demais para
+     baixo". Por isso a regra e `overflow: clip` nos DOIS eixos, e nao so no x.
+
+     Cortar embaixo nao deixa degrau visivel: o corte cai no fim do documento,
+     entao nao ha nada depois dele para revelar a diferenca — a pagina
+     simplesmente acaba onde o conteudo acaba. Medido: altura do body intacta
+     (2202,8px em 412), so a area rolavel encolheu.
+
      POR QUE ESTA REGRA E NAO OUTRA — variantes medidas, mobile:true 412:
 
-       html{overflow-x:clip}    sw 412 OK, mas o excedente vertical do
-                                .glow-blue::before cai de 279,2px para 0,2px
-       html{overflow-x:hidden}  idem, 279,2 -> 0,2
-       body{overflow-x:clip}    sem efeito nenhum: propaga, sw segue 892
-       main{overflow-x:hidden}  sw 412 OK, mas hidden faz o main virar caixa de
-                                rolagem e forca overflow-y a auto: 279,2 -> 0,2
-       main{overflow-x:clip}    sw 412 e 279,2 preservado, mas corta na caixa
-                                do MAIN: acima de 652px o main deixa de ocupar
-                                a viewport e o corte come o sangramento visivel
-                                das glows (medido em 1280: a tinta em x=175 cai
-                                de rgb(10,6,6) para o fundo rgb(5,5,5))
-       .pagina{overflow-x:clip} sw 412, 279,2 preservado, e o corte cai na
+       body{overflow-x:clip}    sem efeito nenhum: propaga para a viewport e o
+                                proprio body volta a visible, sw segue 892
+       main{overflow-x:hidden}  hidden faz o main virar caixa de rolagem e
+                                forca overflow-y a auto
+       main{overflow:clip}      corta na caixa do MAIN: acima de 652px o main
+                                deixa de ocupar a viewport e o corte come o
+                                sangramento visivel das glows (medido em 1280:
+                                a tinta em x=175 cai de rgb(10,6,6) para o
+                                fundo rgb(5,5,5), 1,43 milhao de px de
+                                diferenca)
+       .pagina{overflow:clip}   sw 412, sobra vertical 0,2px, e o corte cai na
                                 borda da VIEWPORT em qualquer largura  <-- esta
 
-     O `clip` e obrigatorio e NAO e intercambiavel com `hidden`: so ele deixa o
-     overflow-y em `visible`, e e isso que preserva os 279,2px de arco inferior
-     do glow azul que descem abaixo do fim do body. Essa faixa nao e vazia — 56
-     a 68% dos pixels diferem do fundo.
-
      Por que uma div e nao o main: o corte precisa cair onde o
-     overflow-x: hidden do body ja corta hoje, que e a borda da viewport. O
-     main nao serve porque tem max-width 652px e mx-auto — abaixo de 652 ele
+     overflow-x: hidden do body ja cortava, que e a borda da viewport. O main
+     nao serve porque tem max-width 652px e mx-auto — abaixo de 652 ele
      coincide com a viewport, acima nao. A .pagina ocupa a largura da viewport
      em toda largura, entao cortar nela nao remove nenhuma tinta que ja
-     aparecia. Verificado com captura em 320, 390, 430, 700 e 1280.
+     aparecia na horizontal. Verificado com captura em 320, 390, 430, 700 e
+     1280: fora da coluna do indice, regiao comum identica.
 
-     NAO tentar resolver isso com overflow-clip-margin no main: foi testado e o
-     Chrome IGNORA a propriedade quando o overflow-y fica em `visible`. Com
+     NAO tentar resolver isso com overflow-clip-margin: foi testado e o Chrome
+     IGNORA a propriedade quando o overflow-y fica em `visible`. Com
      `main{overflow-x:clip;overflow-clip-margin:480px}` o corte aconteceu na
-     mesma na caixa do main, com 1,43 milhao de pixels de diferenca em 1280.
+     mesma na caixa do main.
+
+     NAO usar `hidden` no lugar de `clip`: hidden cria caixa de rolagem, e uma
+     caixa de rolagem aninhada aqui rouba a rolagem da pagina.
 
      Efeito colateral bom: com a viewport de layout de volta em 412x823, a
      marca d'agua (y 929..1160) sai do conjunto de candidatos a LCP na emulacao
@@ -140,7 +153,7 @@
      SectionIndex dentro da .pagina: caixa com overflow: clip recorta ate
      descendente position: fixed, e o indice sumiria da tela. */
   .pagina {
-    overflow-x: clip;
+    overflow: clip;
   }
 
   body {
