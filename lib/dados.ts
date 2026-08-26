@@ -4,7 +4,6 @@ export const NEGOCIO = {
   cidade: "Vacaria/RS",
   endereco: "Rua Santos Dumont, 150 — Centro · Vacaria/RS",
   telefoneExibicao: "(54) 98139-3131",
-  instagramExibicao: "@lael_barbearia_santosdumont",
   cnpj: "66.584.685/0001-79",
   // Sem anoCopyright: o ano do rodape sai de new Date() no Contato.tsx. Uma
   // constante fixa aqui era so uma data esperando para envelhecer sozinha.

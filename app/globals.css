@@ -518,11 +518,16 @@
     inset: -6px 0;
   }
 
-  /* ---- Area de toque dos links do rodape (WCAG 2.2, SC 2.5.8) ----
-     Mesma tecnica do .idx-nav acima, pelo mesmo motivo: os links de telefone e
-     Instagram herdam font-mono 8.5px do <p> e mediam 87,98x11px e 164,23x11px
-     — medido nos quatro aparelhos emulados, identico em todos. Dar padding
-     aqui esticaria a linha do rodape e moveria o bloco inteiro.
+  /* ---- Area de toque do link do rodape (WCAG 2.2, SC 2.5.8) ----
+     Mesma tecnica do .idx-nav acima, pelo mesmo motivo: o link de telefone
+     herda font-mono 8.5px do <p> e media 87,98x11px — medido nos quatro
+     aparelhos emulados, identico em todos. Dar padding aqui esticaria a linha
+     do rodape e moveria o bloco inteiro.
+
+     Era um par: telefone e @ do Instagram lado a lado. O @ saiu do rodape e
+     virou icone na linha do CTA, entao o seletor hoje casa um link so. Segue
+     no plural de seletor (`#s4 p a`) de proposito: qualquer link novo no
+     rodape ja nasce com alvo de 24px.
 
      O <a> precisa de position:relative explicito (o do indice ja tinha o dele
      inline no JSX). Em elemento inline isso nao muda layout nenhum: o ::after
@@ -530,13 +535,13 @@
 
      -6.5px de cada lado leva 11 + 6.5 + 6.5 = 24,0px exatos. As linhas vizinhas
      do rodape nao tem nenhum outro alvo, entao a expansao vertical nao
-     sobrepoe alvo algum; horizontalmente o inset e 0, entao os dois links nao
-     se invadem apesar de estarem lado a lado.
+     sobrepoe alvo algum; horizontalmente o inset e 0, entao um link novo ao
+     lado nao invadiria este.
 
      RESSALVA: a SC 2.5.8 tem excecao para alvo "inline", cujo tamanho e
      restringido pela entrelinha do texto ao redor — que provavelmente se
-     aplica aqui. A correcao entrou mesmo assim porque custa zero pixel e
-     dois alvos de 11px lado a lado num site so de celular erram na pratica.
+     aplica aqui. A correcao entrou mesmo assim porque custa zero pixel e um
+     alvo de 11px num site so de celular erra na pratica.
 
      Verificado: 0 pixels de diferenca em 320, 390 e 430px. */
   #s4 p a {
@@ -546,6 +551,27 @@
     content: "";
     position: absolute;
     inset: -6.5px 0;
+  }
+
+  /* ---- Alvo de toque do icone do Instagram ----
+     Mesma tecnica, e pelo mesmo motivo: o icone precisa ter 22px de LAYOUT
+     para caber na linha do CTA em 320px (coluna de 228px, botao de 177,2px,
+     gap de 12px), mas 22px de alvo e metade do minimo de toque.
+
+     inset -11px leva 22 + 11 + 11 = 44px exatos, o piso da SC 2.5.8. O ::after
+     e absoluto: nao entra no fluxo, nao pinta nada e nao move um pixel do
+     botao ao lado. Trocar isto por padding, ou por width de verdade, estoura a
+     coluna em 320px e o vazamento horizontal volta.
+
+     O position:relative fica aqui, e nao numa classe do Tailwind no JSX, para
+     morar junto do ::after que depende dele. */
+  #s4 .ig-alvo {
+    position: relative;
+  }
+  #s4 .ig-alvo::after {
+    content: "";
+    position: absolute;
+    inset: -11px;
   }
 
   /* ---- Ponto ativo do índice lateral ----

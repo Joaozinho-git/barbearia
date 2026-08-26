@@ -41,22 +41,80 @@ export default function Contato() {
         </span>
       </h2>
 
-      <a
-        href={LINKS.whatsapp}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="reveal border-pole mt-[22px] inline-flex h-[46px] items-center gap-[9px] px-[20px] text-[12.5px] text-ink hover:opacity-[.82]"
+      {/* Linha de acoes: o CTA do WhatsApp e o atalho para o Instagram.
+          O `reveal` e o `mt-[22px]` sairam do <a> e vieram para esta div. A div
+          e bloco e o <a> era inline-flex, mas medido nas tres larguras o botao
+          continua nos MESMOS pixels: a caixa de linha anonima que ele formava
+          ja tinha exatamente 46px, sem entrelinha sobrando acima nem abaixo.
+          Verificado: h2, botao, accordion, rodape e altura da pagina identicos
+          em 320, 390 e 430px.
+
+          gap-[12px] e nao mais que isso: em 320px a coluna tem 228px, o botao
+          ocupa 177,2px e o icone 22px — sobram ~17px de folga. Um icone com
+          caixa de 46px, ou um gap maior, estoura a coluna e o vazamento
+          horizontal volta. Foi por isso que o alvo de toque do Instagram e um
+          ::after absoluto, e nao largura de verdade. */}
+      <div
+        className="reveal mt-[22px] flex items-center gap-[12px]"
         style={{ "--i": 2 } as React.CSSProperties}
       >
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          className="h-[14px] w-[14px] fill-muted"
+        <a
+          href={LINKS.whatsapp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border-pole inline-flex h-[46px] items-center gap-[9px] px-[20px] text-[12.5px] text-ink hover:opacity-[.82]"
         >
-          <path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18a8 8 0 01-4-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1112 20z" />
-        </svg>
-        Falar no WhatsApp
-      </a>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="h-[14px] w-[14px] fill-muted"
+          >
+            <path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18a8 8 0 01-4-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1112 20z" />
+          </svg>
+          Falar no WhatsApp
+        </a>
+
+        {/* O @ do rodape era texto de 8,5px que quase ninguem lia e quase
+            ninguem acertava com o dedo. O mesmo perfil vira icone aqui, ao
+            lado do CTA, no ponto em que o visitante ja esta decidindo falar
+            com a barbearia.
+
+            aria-label e obrigatorio: sem texto visivel e com o <svg>
+            aria-hidden, o link ficaria mudo no leitor de tela. O alvo de 44px
+            vem do `#s4 .ig-alvo::after` no globals.css — a caixa continua com
+            22px e o layout nao sente.
+
+            O desenho e stroke, nao fill, para casar com os icones de cabecalho
+            de secao; currentColor deixa o hover trocar a cor inteira. */}
+        <a
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram da barbearia"
+          className="ig-alvo inline-flex h-[22px] w-[22px] items-center justify-center text-muted hover:text-ink"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="h-[19px] w-[19px]"
+          >
+            <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" />
+            <circle cx="12" cy="12" r="4.1" />
+            <circle
+              cx="17.1"
+              cy="6.9"
+              r="1.05"
+              fill="currentColor"
+              stroke="none"
+            />
+          </svg>
+        </a>
+      </div>
 
       <details
         className="reveal mt-[30px]"
@@ -106,28 +164,28 @@ export default function Contato() {
           <br />
           {NEGOCIO.endereco}
           <br />
-          {/* O telefone e o Instagram eram texto puro: o JSON-LD entregava os
-              dois ao Google e o visitante nao conseguia tocar em nenhum, num
-              site que so existe para celular. As constantes ja estavam no
-              lib/dados.ts, consumidas apenas pelo layout.
+          {/* O telefone era texto puro: o JSON-LD entregava o numero ao Google
+              e o visitante nao conseguia tocar nele, num site que so existe
+              para celular. A constante ja estava no lib/dados.ts, consumida
+              apenas pelo layout.
+
+              O @ do Instagram ficava aqui do lado, separado por " · ". Saiu:
+              virou icone clicavel na linha do CTA, la em cima. O perfil segue
+              no JSON-LD (sameAs no layout.tsx), entao o Google nao perdeu
+              nada — quem perdeu foi so o texto de 8,5px.
 
               text-inherit e no-underline nao sao enfeite: sem eles a folha de
               estilo do navegador pinta o link de azul e sublinha, e o rodape
               deixa de ser o rodape aprovado. Qualquer classe nova aqui precisa
               manter o herdado do <p> (font-mono, 8.5px, uppercase, text-dim).
 
-              A area de toque destes dois links vem do `#s4 p a::after` no
-              globals.css: a caixa segue com 11px de altura e o alvo vai a 24px,
-              sem pintar nada. O seletor casa por descendencia, entao continua
-              valendo dentro do <footer> — mas se estes <p> sairem de dentro de
-              um <p>, ou o id da secao mudar, o alvo volta a 11px em silencio.
-
-              Os dois links e o separador ficam na MESMA linha de JSX de
-              proposito: quebrar a linha faria o React emitir " ", "·" e " "
-              como tres nos de texto em vez de um " · " so, e cada fronteira a
-              mais reposiciona a sequencia seguinte por fracao de pixel. */}
+              A area de toque deste link vem do `#s4 p a::after` no globals.css:
+              a caixa segue com 11px de altura e o alvo vai a 24px, sem pintar
+              nada. O seletor casa por descendencia, entao continua valendo
+              dentro do <footer> — mas se este <p> sair de dentro de um <p>, ou
+              o id da secao mudar, o alvo volta a 11px em silencio. */}
           {/* prettier-ignore */}
-          <a href={`tel:${TELEFONE_E164}`} className="text-inherit no-underline">{NEGOCIO.telefoneExibicao}</a> · <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="text-inherit no-underline">{NEGOCIO.instagramExibicao}</a>
+          <a href={`tel:${TELEFONE_E164}`} className="text-inherit no-underline">{NEGOCIO.telefoneExibicao}</a>
           <br />
           CNPJ {NEGOCIO.cnpj}
         </p>

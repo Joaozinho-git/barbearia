@@ -50,3 +50,7 @@ next-env.d.ts
 
 # saidas das ferramentas de indice e fim de pagina
 /_fim-*.png
+
+# saidas das ferramentas do icone do Instagram (_medir-insta, _shot-insta)
+/_insta-antes.json
+/_shot-cta-*.png

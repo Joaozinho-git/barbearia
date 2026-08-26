@@ -142,6 +142,8 @@ quatro como um bloco atômico. E teste bloqueando `*/_next/static/chunks/*.js` �
 | `_simular-indice.mjs` | Varre candidatas de mecânica do índice contra a geometria **real** do site em 10 viewports, sem precisar reconstruir. É onde `LINHA_BASE` e `JANELA_FINAL` foram escolhidos. `VARRER=1` liga a varredura de parâmetros. |
 | `_comparar-comum.mjs` | Companheiro do `_comparar-visual.mjs` para quando a altura da página muda **de propósito**: recorta as duas capturas na altura menor e diffa a região comum, provando que a mudança de altura foi a única mudança. |
 | `_medir-secao02.mjs` | Geometria e contraste da seção 02. Precisa de `URL_MEDICAO` apontando para a porta de produção. |
+| `_medir-insta.mjs` | Prova da troca do @ do rodapé pelo ícone do Instagram. `node _medir-insta.mjs antes` grava a linha de base (h2, botão do WhatsApp, acordeão, rodapé e altura da página, em 320/390/430, `mobile:true`); `depois` compara. Serve para qualquer mexida na linha de ações da seção 04. |
+| `_shot-insta.mjs` | Recorta a linha de ações da seção 04 em 320 e 390px, para conferir o ícone a olho. |
 | `_gerar-imagens.mjs` | Gera `og-santos-dumont.png` (1200×630), `app/icon.png` (256×256) e `app/apple-icon.png` (180×180) a partir de `public/logo-santos-dumont.png`. **Sobrescreve os três de uma vez** — rodar só quando for regerar todos. |
 
 As capturas vão para `_visual/`, que está no `.gitignore`.
