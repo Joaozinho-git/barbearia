@@ -33,11 +33,11 @@ export default function Hero() {
           style={{ "--i": 1 } as React.CSSProperties}
         >
           <h1 className="font-display uppercase leading-[1.05] tracking-[-.005em]">
-            <span className="block text-[clamp(20px,5.6vw,26px)] font-medium normal-case italic text-muted">
-              Barbearia
-            </span>
             <span className="block text-[clamp(27px,7.4vw,36px)] font-bold text-ink">
               Santos Dumont
+            </span>
+            <span className="block text-[clamp(20px,5.6vw,26px)] font-medium normal-case italic text-muted">
+              Barbearia
             </span>
           </h1>
         </div>

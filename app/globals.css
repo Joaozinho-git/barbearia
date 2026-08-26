@@ -45,8 +45,9 @@
      caixa delas entrava na area rolavel do documento. Antes de mexer, leia.
 
      A RAIZ. As glows tem 960px de largura. A .glow-white::before da secao 03
-     e ancorada em left: -140px a partir do conteudo do main (que comeca em
-     x=72 por causa do pl-[72px]), entao a CAIXA dela vai de x=-68 ate x=892.
+     e ancorada em left: -140px a partir do conteudo do main (que na epoca
+     desta medicao comecava em x=72; hoje o pl e 52px), entao a CAIXA dela ia
+     de x=-68 ate x=892.
      Numa tela de 412px isso deixa 480px de area rolavel fantasma. A tinta que
      mora la fora nunca apareceu — quem esconde e o overflow-x: hidden do body.
      O problema nunca foi a tinta: foi a AREA.
@@ -463,13 +464,19 @@
 
   /* ---- Posicao do indice lateral ----
      O 310px nao e arbitrario: o main tem max-width 652px, entao a borda
-     esquerda dele fica em 50% - 326px e o conteudo comeca em 50% - 254px.
-     O nav fica 56px a esquerda do inicio do conteudo, igual a antes da
-     centralizacao. 254 + 56 = 310.
+     esquerda dele fica em 50% - 326px e, com o pl-[52px], o conteudo comeca
+     em 50% - 274px. A caixa do nav mede 28px e fica 8px a esquerda do
+     conteudo. 274 + 8 + 28 = 310.
+
+     O numero continua 310 depois da remedida dos paddings do main por acaso
+     aritmetico, e nao por coincidencia boba: o conteudo andou 20px para a
+     esquerda e o nav emagreceu exatamente os mesmos 20px de padding
+     horizontal. Se so um dos dois mudar, este 310 muda junto.
 
      O max() devolve os 16px fixos assim que a viewport cai abaixo de 652px,
      que e exatamente onde o mx-auto do main deixa de agir. Por isso a
-     transicao e continua, sem salto, e o mobile nao muda nada.
+     transicao e continua, sem salto: em 652px as duas contas dao 16px, e o
+     respiro de 8px entre o nav e o texto vale dos 320px ate o desktop.
 
      Vive em @layer components de proposito: nenhuma utility do Tailwind
      define left neste nav, entao nao ha disputa de camada. Se algum dia
@@ -479,10 +486,18 @@
   }
 
   /* ---- Area de toque do indice lateral (WCAG 2.2, SC 2.5.8) ----
-     Os cinco links medem 48x14px de caixa — reprovam o minimo de 24x24px. A
-     correcao obvia seria dar padding vertical ao <a>, mas isso esticaria cada
-     link para 44px e espalharia os cinco pontos por mais 150px: o espacamento
-     atual e o aprovado e nao pode mudar.
+     Os cinco links medem 28x14px de caixa — a largura passa no minimo de
+     24x24px, a ALTURA nao. A correcao obvia seria dar padding vertical ao
+     <a>, mas isso esticaria cada link para 44px e espalharia os cinco pontos
+     por mais 150px: o espacamento atual e o aprovado e nao pode mudar.
+
+     A largura sobrou so 4px acima do minimo depois que o px-[10px] do <a>
+     saiu (era 48px de caixa). Aqueles 20px eram vazio puro entre a borda da
+     tela e o ponto, e do numero ate o texto — o mesmo vazio que fazia a
+     coluna do celular parecer empurrada para a direita. Quem quiser mexer no
+     tamanho do .idx-num ou no gap-[9px] precisa refazer esta conta: abaixo
+     de 24px de largura este ::after volta a reprovar, e ai o inset horizontal
+     tem de deixar de ser 0.
 
      Este ::after cresce so a area sensivel ao toque, sem deslocar um pixel e
      sem pintar nada. Depende do position:relative que o <a> ja carrega inline.

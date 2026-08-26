@@ -183,12 +183,14 @@ export default function SectionIndex() {
       aria-label="Índice de seções"
       className="idx-nav fixed top-1/2 z-30 flex -translate-y-1/2 flex-col gap-[14px]"
     >
-      {/* Centro do ponto: 10px de padding + 3.5px de meio ponto = 13.5px.
+      {/* Centro do ponto: 3,5px de meio ponto, agora que o link nao tem mais
+          padding horizontal. Este 3px anda JUNTO com o px-[...] do <a> abaixo:
+          era left-[13px] quando havia px-[10px].
           Os z-index sao o que mantem a linha ATRAS dos pontos: sem eles a
           ordem do DOM decide e a linha corta cada bolinha ao meio. */}
       <span
         aria-hidden="true"
-        className="absolute bottom-0 left-[13px] top-0 w-px bg-line"
+        className="absolute bottom-0 left-[3px] top-0 w-px bg-line"
         style={{ zIndex: 0 }}
       />
       {SECOES.map((secao, i) => (
@@ -212,7 +214,7 @@ export default function SectionIndex() {
           // `.idx-nav a::after` no globals.css, que cresce sem deslocar nada.
           // NAO reintroduzir padding vertical aqui.
           className={
-            "flex items-center gap-[9px] px-[10px]" +
+            "flex items-center gap-[9px]" +
             (i === ativo ? " ativo" : "")
           }
           style={{ position: "relative", zIndex: 1 }}

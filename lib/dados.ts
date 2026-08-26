@@ -17,7 +17,7 @@ export const LINKS = {
 } as const;
 
 export const HORARIOS = [
-  { dia: "Segunda a sexta", horas: "09:00 – 12:00 · 14:00 – 19:30" },
+  { dia: "Segunda a sexta", horas: "09:00 – 12:00 · 14:00 – 21:30" },
   { dia: "Sábado", horas: "06:30 – 12:00 · 13:30 – 19:00" },
   { dia: "Domingo", horas: "Fechado" },
 ] as const;

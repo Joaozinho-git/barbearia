@@ -21,11 +21,25 @@ export default function Home() {
           A SectionIndex fica FORA dela de proposito: caixa com overflow: clip
           recorta ate descendente position: fixed, e o indice sumiria. */}
       <div className="pagina">
-        {/* 652 = 52px de calha do indice + 600px de coluna. O pl-[72px] e a
-            soma da calha com o padding: mantem o conteudo em 560px, igual a
-            antes da centralizacao. Se este max-w mudar, o 310px da .idx-nav
-            no globals.css muda junto. */}
-        <main className="mx-auto max-w-[652px] pl-[72px] pr-[20px]">
+        {/* A SOMA dos dois paddings e o numero que nao pode mudar: 52 + 40 =
+            92px, os mesmos 92px do par 72/20 anterior. Por isso a coluna de
+            texto continua com a MESMA largura em qualquer tela (560px no
+            maximo de 652px) e nenhuma linha reflui — o bloco so andou 20px
+            para a esquerda.
+
+            A divisao deixou de ser 72/20 porque no celular aquilo botava 72px
+            de vazio a esquerda contra 20px a direita, e o conteudo lia como
+            empurrado para o canto direito. Com 52/40 a diferenca cai para
+            12px e o bloco fica opticamente centrado, contando que o indice
+            lateral e tinta fraca (cinco pontos de 7px) e nao pesa como
+            margem.
+
+            52px e o MINIMO com o indice no lugar: a caixa dele mede 28px a
+            partir de left:16px, entao termina em x=44 e sobram 8px de
+            respiro. Reduzir mais encosta o texto nos numeros. Se o max-w ou
+            estes paddings mudarem, o 310px da .idx-nav no globals.css muda
+            junto. */}
+        <main className="mx-auto max-w-[652px] pl-[52px] pr-[40px]">
           <Hero />
           <Equipe />
           <Formacao />
